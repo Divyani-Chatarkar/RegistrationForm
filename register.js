@@ -1,37 +1,26 @@
-require('dotenv').config();
-let express = require('express');
-let mongoose = require('mongoose');
-let path = require('path');
+require('dotenv').config(); // Load env first
+const express = require('express');
+const mongoose = require('mongoose');
+const path = require('path');
 
-let app = express();
-let PORT = 1200;
+const app = express();
+const PORT = process.env.PORT || 1200;
 
-// Middleware to serve static files like HTML
+// Middleware
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Route for the register page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'register.html')); // Serve register.html for /
-});
-
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'register.html')); // Serve register.html for /register
-});
-
-// Middleware for handling URL-encoded data
-app.use(express.urlencoded({ extended: true }));
-
-// MongoDB Atlas connection
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
+    useUnifiedTopology: true
 }).then(() => {
     console.log("MongoDB Atlas Connected");
 }).catch((err) => {
     console.error("MongoDB Atlas Connection Error:", err.message);
 });
 
-// Schema and Model for registration
+// Mongoose schema and model
 const userSchema = new mongoose.Schema({
     name: String,
     email: String,
@@ -39,7 +28,11 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('Register', userSchema);
 
-// Handle user registration form submission
+// Routes
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'register.html'));
+});
+
 app.post('/submit', async (req, res) => {
     const { name, email, pass, Repass } = req.body;
 
@@ -50,14 +43,14 @@ app.post('/submit', async (req, res) => {
     try {
         const newUser = new User({ name, email, pass });
         await newUser.save();
-        res.send('<h2>User saved successfully</h2><a href="/register">Go Back</a>');
+        res.send('<h2>User registered successfully</h2><a href="/">Go Back</a>');
     } catch (err) {
         console.error("Error saving user:", err);
         res.status(500).send("Error saving user");
     }
 });
 
-// Start the server
+// Start server
 app.listen(PORT, () => {
-    console.log('Server running on port', PORT);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
